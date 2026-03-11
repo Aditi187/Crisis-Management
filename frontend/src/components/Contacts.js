@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { contactsAPI } from '../services/api';
 import ContactModal from './ContactModal';
+import { useOutletContext } from 'react-router-dom';
 import '../styles/Contacts.css';
 
 function Contacts() {
     const [contacts, setContacts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const { user } = useOutletContext();
+    const isAdmin = user?.role === 'admin';
 
     useEffect(() => {
         fetchContacts();
@@ -53,9 +56,11 @@ function Contacts() {
         <div className="contacts-page">
             <div className="content-header">
                 <h2>Emergency Contacts</h2>
-                <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                    + Add Contact
-                </button>
+                {isAdmin && (
+                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                        + Add Contact
+                    </button>
+                )}
             </div>
 
             <div className="contacts-grid">
@@ -82,12 +87,14 @@ function Contacts() {
                                     <span>{contact.email}</span>
                                 </div>
                             </div>
-                            <button
-                                className="btn btn-sm btn-danger"
-                                onClick={() => handleDeleteContact(contact.id)}
-                            >
-                                🗑 Remove
-                            </button>
+                            {isAdmin && (
+                                <button
+                                    className="btn btn-sm btn-danger"
+                                    onClick={() => handleDeleteContact(contact.id)}
+                                >
+                                    🗑 Remove
+                                </button>
+                            )}
                         </div>
                     ))
                 )}

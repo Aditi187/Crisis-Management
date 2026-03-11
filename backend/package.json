@@ -7,17 +7,24 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": ["crisis", "management", "alert", "emergency"],
+  "keywords": [
+    "crisis",
+    "management",
+    "alert",
+    "emergency"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "mysql2": "^3.6.0",
-    "dotenv": "^16.3.1",
-    "cors": "^2.8.5",
     "bcryptjs": "^2.4.3",
-    "jsonwebtoken": "^9.0.2",
     "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.1.1",
+    "mysql2": "^3.6.0",
+    "razorpay": "^2.9.6",
     "socket.io": "^4.6.1"
   },
   "devDependencies": {

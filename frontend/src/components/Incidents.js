@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { incidentsAPI } from '../services/api';
 import socketService from '../services/socket';
 import IncidentModal from './IncidentModal';
 import '../styles/Incidents.css';
 
 function Incidents() {
+    const { user } = useOutletContext();
+    const isAdmin = user?.role === 'admin';
     const [incidents, setIncidents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
@@ -109,7 +112,7 @@ function Incidents() {
                                 <span>📍 {incident.location}</span>
                                 <span>🕐 {formatTime(incident.created_at)}</span>
                             </div>
-                            {incident.status === 'active' && (
+                            {incident.status === 'active' && isAdmin && (
                                 <button
                                     className="btn btn-sm btn-success"
                                     onClick={() => handleResolveIncident(incident.id)}

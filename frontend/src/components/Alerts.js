@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { alertsAPI } from '../services/api';
 import socketService from '../services/socket';
 import AlertModal from './AlertModal';
 import '../styles/Alerts.css';
 
 function Alerts() {
+    const { user } = useOutletContext();
+    const isAdmin = user?.role === 'admin';
     const [alerts, setAlerts] = useState([]);
     const [filteredAlerts, setFilteredAlerts] = useState([]);
     const [filter, setFilter] = useState('all');
@@ -138,9 +141,11 @@ function Alerts() {
                             Info
                         </button>
                     </div>
-                    <button className="btn btn-danger" onClick={() => setShowModal(true)}>
-                        + Create Alert
-                    </button>
+                    {isAdmin && (
+                        <button className="btn btn-danger" onClick={() => setShowModal(true)}>
+                            + Create Alert
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -164,7 +169,7 @@ function Alerts() {
                                 <span>📍 {alert.location}</span>
                                 <span>🕐 {formatTime(alert.created_at)}</span>
                             </div>
-                            {alert.status === 'active' && (
+                            {alert.status === 'active' && isAdmin && (
                                 <div className="alert-actions">
                                     <button
                                         className="btn btn-sm btn-success"

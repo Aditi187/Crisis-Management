@@ -1,0 +1,203 @@
+.sdg-page {
+    animation: fadeIn 0.3s ease;
+}
+
+.sdg-hero {
+    background: linear-gradient(135deg, #1a5276, #2980b9);
+    color: white;
+    padding: 40px;
+    border-radius: 15px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.sdg-hero h1 {
+    font-size: 32px;
+    margin-bottom: 15px;
+}
+
+.sdg-hero p {
+    font-size: 16px;
+    opacity: 0.9;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.7;
+}
+
+.sdg-overview {
+    margin-bottom: 30px;
+}
+
+.sdg-overview-card {
+    background: white;
+    padding: 25px 30px;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    text-align: center;
+}
+
+.sdg-overview-card h3 {
+    font-size: 20px;
+    color: var(--primary-color);
+    margin-bottom: 8px;
+}
+
+.sdg-overview-card p {
+    color: var(--light-text);
+    font-size: 15px;
+}
+
+.sdg-goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    margin-bottom: 30px;
+}
+
+.sdg-goal-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    padding: 30px;
+    border-left: 6px solid;
+    transition: transform 0.3s;
+}
+
+.sdg-goal-card:hover {
+    transform: translateX(5px);
+}
+
+.sdg-goal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.sdg-number {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.sdg-goal-header h2 {
+    font-size: 22px;
+    color: var(--dark-text);
+    margin-bottom: 6px;
+}
+
+.sdg-description {
+    font-size: 14px;
+    color: var(--light-text);
+    line-height: 1.5;
+}
+
+.sdg-impact {
+    background: var(--light-bg);
+    padding: 18px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+}
+
+.sdg-impact h4 {
+    font-size: 15px;
+    margin-bottom: 8px;
+    color: var(--primary-color);
+}
+
+.sdg-impact p {
+    font-size: 14px;
+    color: var(--dark-text);
+    line-height: 1.6;
+}
+
+.sdg-actions h4 {
+    font-size: 15px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.sdg-actions ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sdg-actions li {
+    padding: 6px 0;
+    padding-left: 22px;
+    position: relative;
+    font-size: 14px;
+    color: var(--dark-text);
+}
+
+.sdg-actions li::before {
+    content: '✅';
+    position: absolute;
+    left: 0;
+    font-size: 12px;
+}
+
+.sdg-footer {
+    margin-top: 10px;
+}
+
+.sdg-cta {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    color: white;
+    padding: 40px;
+    border-radius: 15px;
+    text-align: center;
+}
+
+.sdg-cta h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+}
+
+.sdg-cta p {
+    font-size: 15px;
+    opacity: 0.9;
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0 auto 20px;
+}
+
+.sdg-badges {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.sdg-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    color: white;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .sdg-hero {
+        padding: 25px;
+    }
+
+    .sdg-hero h1 {
+        font-size: 24px;
+    }
+
+    .sdg-goal-header {
+        flex-direction: column;
+    }
+
+    .sdg-cta {
+        padding: 25px;
+    }
+}

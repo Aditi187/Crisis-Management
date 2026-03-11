@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/db');
-const auth = require('../middleware/auth');
+const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -31,8 +31,8 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Create contact
-router.post('/', auth, async (req, res) => {
+// Create contact (admin only)
+router.post('/', auth, adminOnly, async (req, res) => {
     try {
         const { name, role, phone, email, department } = req.body;
 
@@ -50,8 +50,8 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Update contact
-router.put('/:id', auth, async (req, res) => {
+// Update contact (admin only)
+router.put('/:id', auth, adminOnly, async (req, res) => {
     try {
         const { name, role, phone, email, department, is_active } = req.body;
 
@@ -99,8 +99,8 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete contact
-router.delete('/:id', auth, async (req, res) => {
+// Delete contact (admin only)
+router.delete('/:id', auth, adminOnly, async (req, res) => {
     try {
         // Soft delete
         await db.query('UPDATE emergency_contacts SET is_active = FALSE WHERE id = ?', [req.params.id]);

@@ -1,0 +1,221 @@
+.map-dashboard {
+    animation: fadeIn 0.3s ease;
+}
+
+.map-stats {
+    display: flex;
+    gap: 10px;
+}
+
+.map-stat {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.map-stat.critical {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger-color);
+}
+
+.map-stat.responding {
+    background: rgba(243, 156, 18, 0.1);
+    color: var(--warning-color);
+}
+
+.map-stat.total {
+    background: rgba(52, 152, 219, 0.1);
+    color: var(--info-color);
+}
+
+.map-weather-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    margin-bottom: 15px;
+    font-size: 14px;
+    font-weight: 500;
+    flex-wrap: wrap;
+}
+
+.proximity-toggle {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+.proximity-toggle input { cursor: pointer; }
+
+.category-filter {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: 2px solid var(--border-color);
+    border-radius: 25px;
+    background: white;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.filter-btn:hover {
+    border-color: var(--primary-color);
+}
+
+.filter-btn.active {
+    background: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.route-banner {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.map-container {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 20px;
+}
+
+.leaflet-map {
+    height: 550px;
+    width: 100%;
+    z-index: 1;
+}
+
+.custom-marker {
+    background: none !important;
+    border: none !important;
+}
+
+.map-popup h4 {
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: var(--primary-color);
+}
+
+.map-popup p {
+    font-size: 12px;
+    color: var(--light-text);
+    margin-bottom: 8px;
+}
+
+.popup-meta {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.popup-badge {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.popup-badge.critical { background: #fde8e8; color: #e74c3c; }
+.popup-badge.high { background: #fef3e2; color: #e67e22; }
+.popup-badge.medium { background: #fef9e7; color: #f39c12; }
+.popup-badge.low { background: #ebf5fb; color: #3498db; }
+
+.popup-status {
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.popup-status.reported { background: #ebf5fb; color: #3498db; }
+.popup-status.verified { background: #fef9e7; color: #f39c12; }
+.popup-status.responding { background: #fef3e2; color: #e67e22; }
+
+.popup-location {
+    font-size: 11px;
+    color: var(--light-text);
+    margin-bottom: 8px;
+}
+
+.popup-nav-btn {
+    width: 100%;
+    padding: 6px 12px;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.3s;
+}
+
+.popup-nav-btn:hover {
+    background: var(--secondary-color);
+}
+
+.map-legend {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.map-legend h4 {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.legend-items {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    font-size: 13px;
+}
+
+.legend-items > span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+@media (max-width: 768px) {
+    .leaflet-map {
+        height: 400px;
+    }
+
+    .map-stats {
+        flex-wrap: wrap;
+    }
+}

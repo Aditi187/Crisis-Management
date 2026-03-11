@@ -8,11 +8,12 @@ function Layout({ user, onLogout }) {
         <div className="layout">
             <nav className="navbar">
                 <div className="nav-brand">
-                    <span className="brand-icon">🛡️</span>
-                    <span>Crisis Management</span>
+                    <span className="brand-icon">�</span>
+                    <span>Disaster Management System</span>
                     <span className="realtime-badge" title="Real-time updates enabled">🔴 LIVE</span>
                 </div>
                 <div className="nav-user">
+                    <span className="user-role-badge">{user?.role === 'admin' ? '👑 Admin' : '👤 User'}</span>
                     <span className="user-name">{user?.username}</span>
                     <button onClick={onLogout} className="btn btn-secondary">
                         Logout
@@ -30,6 +31,18 @@ function Layout({ user, onLogout }) {
                             </NavLink>
                         </li>
                         <li>
+                            <NavLink to="/map" className="menu-item">
+                                <span className="menu-icon">🗺️</span>
+                                <span>Disaster Map</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/disasters" className="menu-item">
+                                <span className="menu-icon">🚨</span>
+                                <span>Report Disaster</span>
+                            </NavLink>
+                        </li>
+                        <li>
                             <NavLink to="/alerts" className="menu-item">
                                 <span className="menu-icon">⚠️</span>
                                 <span>Alerts</span>
@@ -42,16 +55,40 @@ function Layout({ user, onLogout }) {
                             </NavLink>
                         </li>
                         <li>
+                            <NavLink to="/donations" className="menu-item">
+                                <span className="menu-icon">💰</span>
+                                <span>Donations</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/volunteers" className="menu-item">
+                                <span className="menu-icon">🤝</span>
+                                <span>Volunteers</span>
+                            </NavLink>
+                        </li>
+                        <li>
                             <NavLink to="/contacts" className="menu-item">
                                 <span className="menu-icon">📞</span>
-                                <span>Emergency Contacts</span>
+                                <span>Contacts</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/knowledge-base" className="menu-item">
+                                <span className="menu-icon">🏥</span>
+                                <span>First Aid Guide</span>
+                            </NavLink>
+                        </li>
+                        <li>
+                            <NavLink to="/sdg-goals" className="menu-item">
+                                <span className="menu-icon">🌐</span>
+                                <span>SDG Goals</span>
                             </NavLink>
                         </li>
                     </ul>
                 </aside>
 
                 <main className="content">
-                    <Outlet />
+                    <Outlet context={{ user }} />
                 </main>
             </div>
 

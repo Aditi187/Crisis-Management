@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/db');
-const auth = require('../middleware/auth');
+const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -78,8 +78,8 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Update incident
-router.put('/:id', auth, async (req, res) => {
+// Update incident (admin only)
+router.put('/:id', auth, adminOnly, async (req, res) => {
     try {
         const { title, description, severity, location, latitude, longitude, status, assigned_to } = req.body;
 
@@ -142,8 +142,8 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete incident
-router.delete('/:id', auth, async (req, res) => {
+// Delete incident (admin only)
+router.delete('/:id', auth, adminOnly, async (req, res) => {
     try {
         await db.query('DELETE FROM incidents WHERE id = ?', [req.params.id]);
         
@@ -151,7 +151,6 @@ router.delete('/:id', auth, async (req, res) => {
         const io = req.app.get('io');
         io.emit('incident:deleted', { id: req.params.id });
 
-        res.json({ message: 'Incident deleted successfully' });
         res.json({ message: 'Incident deleted successfully' });
     } catch (error) {
         console.error('Delete incident error:', error);

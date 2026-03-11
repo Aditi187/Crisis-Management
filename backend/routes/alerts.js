@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../config/db');
-const auth = require('../middleware/auth');
+const { auth, adminOnly } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -49,8 +49,8 @@ router.get('/:id', auth, async (req, res) => {
     }
 });
 
-// Create alert
-router.post('/', auth, async (req, res) => {
+// Create alert (admin only)
+router.post('/', auth, adminOnly, async (req, res) => {
     try {
         const { title, description, type, location, latitude, longitude } = req.body;
 
@@ -78,8 +78,8 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Update alert
-router.put('/:id', auth, async (req, res) => {
+// Update alert (admin only)
+router.put('/:id', auth, adminOnly, async (req, res) => {
     try {
         const { title, description, type, location, latitude, longitude, status } = req.body;
 
@@ -138,8 +138,8 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// Delete alert
-router.delete('/:id', auth, async (req, res) => {
+// Delete alert (admin only)
+router.delete('/:id', auth, adminOnly, async (req, res) => {
     try {
         await db.query('DELETE FROM alerts WHERE id = ?', [req.params.id]);
         

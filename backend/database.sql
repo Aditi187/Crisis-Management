@@ -107,3 +107,70 @@ INSERT INTO incidents (title, description, severity, location, status, reported_
 ('Building Fire - Commercial Complex', 'Fire reported on the 5th floor of the main commercial building. Emergency services dispatched.', 'high', '123 Main Street', 'active', 1),
 ('Medical Emergency - Shopping Mall', 'Multiple casualties reported. Medical teams on site providing assistance.', 'medium', 'Central Mall', 'investigating', 1),
 ('Traffic Accident - Highway', 'Minor collision on Highway 101. No serious injuries reported.', 'low', 'Highway 101, Mile 45', 'resolved', 1);
+
+-- =============================================
+-- NEW TABLES: Disaster Reports, Volunteers, Donations
+-- =============================================
+
+-- Disaster Reports Table
+CREATE TABLE IF NOT EXISTS disaster_reports (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    title VARCHAR(255) NOT NULL,
+    description TEXT NOT NULL,
+    category ENUM('flood', 'fire', 'earthquake', 'cyclone', 'landslide', 'tsunami', 'drought', 'other') NOT NULL,
+    latitude DECIMAL(10, 8) NOT NULL,
+    longitude DECIMAL(11, 8) NOT NULL,
+    location_name VARCHAR(255) NOT NULL,
+    status ENUM('reported', 'verified', 'responding', 'resolved') DEFAULT 'reported',
+    severity ENUM('critical', 'high', 'medium', 'low') DEFAULT 'medium',
+    image_url VARCHAR(500),
+    reported_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    resolved_at TIMESTAMP NULL,
+    FOREIGN KEY (reported_by) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- Volunteers Table
+CREATE TABLE IF NOT EXISTS volunteers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    skills VARCHAR(255),
+    location VARCHAR(255),
+    availability ENUM('available', 'busy', 'offline') DEFAULT 'available',
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Donations Table
+CREATE TABLE IF NOT EXISTS donations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    donor_name VARCHAR(100) NOT NULL,
+    donor_email VARCHAR(100) NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    currency VARCHAR(3) DEFAULT 'INR',
+    razorpay_order_id VARCHAR(255),
+    razorpay_payment_id VARCHAR(255),
+    razorpay_signature VARCHAR(255),
+    status ENUM('created', 'paid', 'failed') DEFAULT 'created',
+    disaster_report_id INT,
+    message TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (disaster_report_id) REFERENCES disaster_reports(id) ON DELETE SET NULL
+);
+
+-- Insert sample disaster reports
+INSERT INTO disaster_reports (title, description, category, latitude, longitude, location_name, status, severity, reported_by) VALUES
+('Major Flooding in Mumbai', 'Heavy monsoon rains have caused severe flooding in low-lying areas. Multiple residential areas affected.', 'flood', 19.0760, 72.8777, 'Mumbai, Maharashtra', 'responding', 'critical', 1),
+('Forest Fire in Uttarakhand', 'Large forest fire spreading across 50 hectares. Nearby villages at risk.', 'fire', 30.0668, 79.0193, 'Uttarakhand', 'verified', 'high', 1),
+('Earthquake Tremors in Delhi', 'Mild earthquake tremors felt across NCR region. No major damage reported yet.', 'earthquake', 28.6139, 77.2090, 'New Delhi', 'reported', 'medium', 1);
+
+-- Insert sample volunteers
+INSERT INTO volunteers (name, email, phone, skills, location, availability) VALUES
+('Rahul Sharma', 'rahul@volunteer.org', '+91-9876543210', 'First Aid, Swimming, Driving', 'Mumbai, Maharashtra', 'available'),
+('Priya Patel', 'priya@volunteer.org', '+91-9876543211', 'Medical, CPR, Counseling', 'Delhi, NCR', 'available'),
+('Amit Kumar', 'amit@volunteer.org', '+91-9876543212', 'Logistics, Communication, Driving', 'Bangalore, Karnataka', 'busy'),
+('Sneha Gupta', 'sneha@volunteer.org', '+91-9876543213', 'Cooking, First Aid, Teaching', 'Chennai, Tamil Nadu', 'available');

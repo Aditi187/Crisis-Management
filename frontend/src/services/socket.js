@@ -1,6 +1,6 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5001';
 
 class SocketService {
     constructor() {
@@ -76,6 +76,23 @@ class SocketService {
         }
     }
 
+    // Disaster events
+    onDisasterCreated(callback) {
+        if (this.socket) this.socket.on('disaster:created', callback);
+    }
+
+    onDisasterUpdated(callback) {
+        if (this.socket) this.socket.on('disaster:updated', callback);
+    }
+
+    onDisasterDeleted(callback) {
+        if (this.socket) this.socket.on('disaster:deleted', callback);
+    }
+
+    onDonationReceived(callback) {
+        if (this.socket) this.socket.on('donation:received', callback);
+    }
+
     // Remove listeners
     offAlertEvents() {
         if (this.socket) {
@@ -90,6 +107,14 @@ class SocketService {
             this.socket.off('incident:created');
             this.socket.off('incident:updated');
             this.socket.off('incident:deleted');
+        }
+    }
+
+    offDisasterEvents() {
+        if (this.socket) {
+            this.socket.off('disaster:created');
+            this.socket.off('disaster:updated');
+            this.socket.off('disaster:deleted');
         }
     }
 }

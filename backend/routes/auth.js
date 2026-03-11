@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 // Register
 router.post('/register', async (req, res) => {
     try {
-        const { username, email, password, role } = req.body;
+        const { username, email, password, adminCode } = req.body;
 
         // Check if user exists
         const [existing] = await db.query('SELECT id FROM users WHERE username = ? OR email = ?', [username, email]);
@@ -60,18 +60,28 @@ router.post('/register', async (req, res) => {
             return res.status(400).json({ error: 'User already exists' });
         }
 
+        // Determine role - admin requires secret code
+        const ADMIN_SECRET = process.env.ADMIN_SECRET || 'admin_123';
+        let role = 'viewer';
+        if (adminCode) {
+            if (adminCode !== ADMIN_SECRET) {
+                return res.status(403).json({ error: 'Invalid admin authorization code' });
+            }
+            role = 'admin';
+        }
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create user
         const [result] = await db.query(
             'INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)',
-            [username, email, hashedPassword, role || 'viewer']
+            [username, email, hashedPassword, role]
         );
 
         // Generate token
         const token = jwt.sign(
-            { id: result.insertId, username, role: role || 'viewer' },
+            { id: result.insertId, username, role },
             process.env.JWT_SECRET,
             { expiresIn: '24h' }
         );
@@ -82,7 +92,7 @@ router.post('/register', async (req, res) => {
                 id: result.insertId,
                 username,
                 email,
-                role: role || 'viewer'
+                role
             }
         });
     } catch (error) {

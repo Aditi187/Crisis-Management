@@ -5,6 +5,12 @@ import Dashboard from './components/Dashboard';
 import Alerts from './components/Alerts';
 import Incidents from './components/Incidents';
 import Contacts from './components/Contacts';
+import MapDashboard from './components/MapDashboard';
+import DisasterReport from './components/DisasterReport';
+import Donations from './components/Donations';
+import Volunteers from './components/Volunteers';
+import SDGGoals from './components/SDGGoals';
+import KnowledgeBase from './components/KnowledgeBase';
 import Layout from './components/Layout';
 import socketService from './services/socket';
 import './App.css';
@@ -70,9 +76,15 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="map" element={<MapDashboard />} />
+          <Route path="disasters" element={<DisasterReport />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="incidents" element={<Incidents />} />
           <Route path="contacts" element={<Contacts />} />
+          <Route path="donations" element={<Donations />} />
+          <Route path="volunteers" element={<Volunteers />} />
+          <Route path="knowledge-base" element={<KnowledgeBase />} />
+          <Route path="sdg-goals" element={<SDGGoals />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
