@@ -67,10 +67,12 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-server.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-    console.log(`📍 API endpoint: http://localhost:${PORT}/api`);
-    console.log(`🔌 WebSocket ready for real-time updates`);
-});
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`🚀 Server is running on port ${PORT}`);
+        console.log(`📍 API endpoint: http://localhost:${PORT}/api`);
+        console.log(`🔌 WebSocket ready for real-time updates`);
+    });
+}
 
 module.exports = { app, io };

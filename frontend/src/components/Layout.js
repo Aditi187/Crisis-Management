@@ -72,18 +72,6 @@ function Layout({ user, onLogout }) {
                                 <span>Contacts</span>
                             </NavLink>
                         </li>
-                        <li>
-                            <NavLink to="/knowledge-base" className="menu-item">
-                                <span className="menu-icon">🏥</span>
-                                <span>First Aid Guide</span>
-                            </NavLink>
-                        </li>
-                        <li>
-                            <NavLink to="/sdg-goals" className="menu-item">
-                                <span className="menu-icon">🌐</span>
-                                <span>SDG Goals</span>
-                            </NavLink>
-                        </li>
                     </ul>
                 </aside>
 

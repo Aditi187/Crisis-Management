@@ -6,6 +6,15 @@ function RealTimeNotification() {
     const [notifications, setNotifications] = useState([]);
 
     useEffect(() => {
+        const showNotification = (notification) => {
+            setNotifications((prev) => [...prev, notification]);
+
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                setNotifications((prev) => prev.filter((n) => n.id !== notification.id));
+            }, 5000);
+        };
+
         // Listen for new alerts
         socketService.onAlertCreated((alert) => {
             showNotification({
@@ -43,15 +52,6 @@ function RealTimeNotification() {
             socketService.offIncidentEvents();
         };
     }, []);
-
-    const showNotification = (notification) => {
-        setNotifications((prev) => [...prev, notification]);
-
-        // Auto remove after 5 seconds
-        setTimeout(() => {
-            removeNotification(notification.id);
-        }, 5000);
-    };
 
     const removeNotification = (id) => {
         setNotifications((prev) => prev.filter((n) => n.id !== id));

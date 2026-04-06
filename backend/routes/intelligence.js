@@ -163,27 +163,9 @@ router.get('/weather', auth, async (req, res) => {
             const url = `https://api.openweathermap.org/data/2.5/weather?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&appid=${encodeURIComponent(apiKey)}&units=metric`;
             const data = await fetchJSON(url);
             return res.json(data);
+        } else {
+            return res.status(400).json({ error: 'OPENWEATHER_API_KEY is not configured. Cannot fetch real-time weather.' });
         }
-
-        // Mock weather data when API key not configured
-        res.json({
-            coord: { lat: parseFloat(lat), lon: parseFloat(lng) },
-            weather: [{ id: 802, main: 'Clouds', description: 'scattered clouds', icon: '03d' }],
-            main: {
-                temp: 28 + Math.random() * 10,
-                feels_like: 30 + Math.random() * 5,
-                humidity: 60 + Math.floor(Math.random() * 30),
-                pressure: 1010 + Math.floor(Math.random() * 10)
-            },
-            wind: {
-                speed: 3 + Math.random() * 8,
-                deg: Math.floor(Math.random() * 360)
-            },
-            visibility: 8000 + Math.floor(Math.random() * 2000),
-            name: 'Local Area',
-            _mock: true,
-            _note: 'Set OPENWEATHER_API_KEY in .env for real weather data'
-        });
     } catch (error) {
         console.error('Weather fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch weather data' });
@@ -225,12 +207,8 @@ router.get('/risk', auth, async (req, res) => {
                 console.error('Weather API error during risk assessment:', e.message);
             }
         } else {
-            // Mock weather for risk calculation
-            weather = {
-                main: { temp: 32, humidity: 75 },
-                wind: { speed: 5 },
-                weather: [{ id: 802, main: 'Clouds' }]
-            };
+            // Weather API not configured
+            weather = null;
         }
 
         const threat = computeThreatLevel(nearby, weather);
@@ -278,81 +256,13 @@ router.get('/risk', auth, async (req, res) => {
 // ========================================================
 router.get('/official-feeds', auth, async (req, res) => {
     try {
-        // NDMA / IMD don't have free public JSON APIs, so we provide
-        // curated data with links to their official portals
-        const feeds = [
-            {
-                source: 'IMD',
-                name: 'India Meteorological Department',
-                url: 'https://mausam.imd.gov.in',
-                type: 'weather',
-                alerts: [
-                    {
-                        title: 'Cyclone Watch – Bay of Bengal',
-                        description: 'Deep depression over Bay of Bengal likely to intensify. Coastal states advised to remain alert.',
-                        severity: 'high',
-                        region: 'Eastern Coast',
-                        issued: new Date(Date.now() - 3600000).toISOString()
-                    },
-                    {
-                        title: 'Heavy Rainfall Warning – Western Ghats',
-                        description: 'IMD predicts heavy to very heavy rainfall over Western Ghats region for the next 48 hours.',
-                        severity: 'medium',
-                        region: 'Western Ghats',
-                        issued: new Date(Date.now() - 7200000).toISOString()
-                    },
-                    {
-                        title: 'Heatwave Alert – North India',
-                        description: 'Maximum temperatures expected to exceed 45°C in parts of Rajasthan and Madhya Pradesh.',
-                        severity: 'high',
-                        region: 'North India',
-                        issued: new Date(Date.now() - 10800000).toISOString()
-                    }
-                ]
-            },
-            {
-                source: 'NDMA',
-                name: 'National Disaster Management Authority',
-                url: 'https://ndma.gov.in',
-                type: 'disaster',
-                alerts: [
-                    {
-                        title: 'Flood Preparedness Advisory',
-                        description: 'NDMA advises all states in monsoon belt to activate flood response mechanisms.',
-                        severity: 'medium',
-                        region: 'Pan-India',
-                        issued: new Date(Date.now() - 14400000).toISOString()
-                    },
-                    {
-                        title: 'Earthquake Response Protocol Active',
-                        description: 'After recent seismic activity in NE India, NDRF teams deployed to Assam and Meghalaya.',
-                        severity: 'high',
-                        region: 'Northeast India',
-                        issued: new Date(Date.now() - 18000000).toISOString()
-                    }
-                ]
-            },
-            {
-                source: 'NDRF',
-                name: 'National Disaster Response Force',
-                url: 'https://www.ndrf.gov.in',
-                type: 'response',
-                alerts: [
-                    {
-                        title: 'NDRF Teams Pre-positioned',
-                        description: '15 NDRF teams deployed across 5 states for cyclone preparedness.',
-                        severity: 'info',
-                        region: 'Coastal India',
-                        issued: new Date(Date.now() - 21600000).toISOString()
-                    }
-                ]
-            }
-        ];
-
+        // Indian Govt (IMD/NDMA) do not offer free public JSON APIs globally.
+        // We removed the hardcoded mock data per your request.
+        // To get real feeds here, you will need to build an RSS scraper for ndma.gov.in
         res.json({
             last_updated: new Date().toISOString(),
-            feeds,
-            _note: 'Data sourced from IMD/NDMA official channels. Links to live portals provided.'
+            feeds: [],
+            _note: 'No hardcoded data. Real-time feeds require an active Indian Govt. RSS integration/web scraper.'
         });
     } catch (error) {
         console.error('Official feeds error:', error);

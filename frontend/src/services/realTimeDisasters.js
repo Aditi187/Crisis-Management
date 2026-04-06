@@ -11,6 +11,9 @@ const USGS_API = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_
 // NASA EONET API configuration
 const EONET_API = 'https://eonet.gsfc.nasa.gov/api/v3/events';
 
+// OCHA ReliefWeb Global Disasters API (UN)
+const RELIEFWEB_API = 'https://api.reliefweb.int/v1/disasters?appname=crisis_management&profile=full&preset=latest&limit=15&query[value]=status:current';
+
 /**
  * Map between NASA EONET category IDs and our disaster types
  */
@@ -105,25 +108,77 @@ const getSeverityFromMagnitude = (magnitude) => {
 };
 
 /**
+ * Fetch and parse disaster data from ReliefWeb API (UN Office for the Coordination of Humanitarian Affairs)
+ * Covers global floods, droughts, epidemics, and civil emergencies.
+ */
+export const fetchReliefWebEvents = async () => {
+    try {
+        const response = await fetch(RELIEFWEB_API);
+        if (!response.ok) throw new Error('ReliefWeb API failed');
+        
+        const data = await response.json();
+        
+        if (!data.data) return [];
+
+        return data.data
+            .filter(event => event.fields && event.fields.primary_country && event.fields.primary_country.location)
+            .map(event => {
+                const fields = event.fields;
+                const types = fields.type || [];
+                const primaryType = types.length > 0 ? types[0].name.toLowerCase() : 'other';
+                
+                // Map to our categories
+                let category = 'other';
+                if (primaryType.includes('flood')) category = 'flood';
+                if (primaryType.includes('fire')) category = 'fire';
+                if (primaryType.includes('cyclone') || primaryType.includes('storm')) category = 'cyclone';
+                if (primaryType.includes('drought')) category = 'drought';
+                if (primaryType.includes('earthquake')) category = 'earthquake';
+                if (primaryType.includes('landslide')) category = 'landslide';
+
+                return {
+                    id: `rw_${event.id}`,
+                    source: 'reliefweb',
+                    category: category,
+                    title: fields.name,
+                    description: fields.description || `Global ${category} emergency.`,
+                    location_name: fields.primary_country.name,
+                    latitude: fields.primary_country.location.lat,
+                    longitude: fields.primary_country.location.lon,
+                    severity: 'high', // ReliefWeb typically tracks major internationally recognized crises
+                    timestamp: new Date(fields.date?.created || Date.now()),
+                    status: 'responding',
+                    url: fields.url || ''
+                };
+            });
+    } catch (error) {
+        console.error('Error fetching ReliefWeb events:', error);
+        return [];
+    }
+};
+
+/**
  * Fetch all real-time disaster data from multiple sources
  * @returns {Promise<Array>} Combined array of all disasters
  */
 export const fetchAllDisasters = async () => {
     try {
-        const [earthquakes, nasaEvents] = await Promise.all([
+        const [earthquakes, nasaEvents, reliefWebEvents] = await Promise.all([
             fetchEarthquakes(),
-            fetchNasaEvents()
+            fetchNasaEvents(),
+            fetchReliefWebEvents()
         ]);
         
         // Combine and remove duplicates
-        const allDisasters = [...earthquakes, ...nasaEvents];
+        const allDisasters = [...earthquakes, ...nasaEvents, ...reliefWebEvents];
         
         // Sort by timestamp (newest first)
         allDisasters.sort((a, b) => b.timestamp - a.timestamp);
         
-        console.log(`Fetched ${allDisasters.length} real-time disasters:`, {
+        console.log(`Fetched ${allDisasters.length} real-time global disasters:`, {
             earthquakes: earthquakes.length,
-            nasaEvents: nasaEvents.length
+            nasaEvents: nasaEvents.length,
+            reliefWebEvents: reliefWebEvents.length
         });
         
         return allDisasters;

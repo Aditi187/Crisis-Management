@@ -9,8 +9,6 @@ import MapDashboard from './components/MapDashboard';
 import DisasterReport from './components/DisasterReport';
 import Donations from './components/Donations';
 import Volunteers from './components/Volunteers';
-import SDGGoals from './components/SDGGoals';
-import KnowledgeBase from './components/KnowledgeBase';
 import Layout from './components/Layout';
 import socketService from './services/socket';
 import './App.css';
@@ -83,8 +81,6 @@ function App() {
           <Route path="contacts" element={<Contacts />} />
           <Route path="donations" element={<Donations />} />
           <Route path="volunteers" element={<Volunteers />} />
-          <Route path="knowledge-base" element={<KnowledgeBase />} />
-          <Route path="sdg-goals" element={<SDGGoals />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

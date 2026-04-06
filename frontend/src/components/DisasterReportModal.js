@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -31,6 +31,58 @@ function DisasterReportModal({ onClose, onSubmit }) {
     const [image, setImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [mapPosition, setMapPosition] = useState(null);
+    const [isListening, setIsListening] = useState(false);
+
+    // -- Component 3: NLP Voice-to-Threat SOS Parser --
+    const startListening = (e) => {
+        e.preventDefault();
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert('Speech Recognition is not supported in your browser. Please use Chrome/Edge.');
+            return;
+        }
+
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = 'en-US';
+
+        recognition.onstart = () => setIsListening(true);
+        
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            
+            // NLP Keyword Extraction
+            let detectedCategory = formData.category;
+            let detectedSeverity = formData.severity;
+            
+            if (transcript.includes('fire') || transcript.includes('burn')) detectedCategory = 'fire';
+            else if (transcript.includes('flood') || transcript.includes('water')) detectedCategory = 'flood';
+            else if (transcript.includes('earthquake') || transcript.includes('shake')) detectedCategory = 'earthquake';
+            else if (transcript.includes('landslide')) detectedCategory = 'landslide';
+            else if (transcript.includes('cyclone') || transcript.includes('storm')) detectedCategory = 'cyclone';
+            else if (transcript.includes('tsunami')) detectedCategory = 'tsunami';
+
+            if (transcript.includes('critical') || transcript.includes('help') || transcript.includes('dying') || transcript.includes('trapped')) detectedSeverity = 'critical';
+            else if (transcript.includes('high') || transcript.includes('bad') || transcript.includes('severe')) detectedSeverity = 'high';
+            else if (transcript.includes('minor') || transcript.includes('low')) detectedSeverity = 'low';
+
+            setFormData(prev => ({
+                ...prev,
+                title: prev.title ? prev.title : 'Voice: ' + transcript.split(' ').slice(0, 4).join(' ') + '...',
+                description: (prev.description ? prev.description + '\n' : '') + '[Auto-Transcript]: ' + transcript,
+                category: detectedCategory,
+                severity: detectedSeverity
+            }));
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error', event.error);
+            alert('Microphone error: ' + event.error);
+        };
+        recognition.onend = () => setIsListening(false);
+        recognition.start();
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -81,6 +133,22 @@ function DisasterReportModal({ onClose, onSubmit }) {
                     <button className="close-btn" onClick={onClose}>×</button>
                 </div>
                 <form onSubmit={handleSubmit} className="modal-body">
+                    
+                    {/* Component 3: SOS Voice Input Button */}
+                    <div style={{ marginBottom: '20px', textAlign: 'center', backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e1e8ed' }}>
+                        <button 
+                            type="button" 
+                            onClick={startListening} 
+                            className={`btn ${isListening ? 'btn-danger' : 'btn-primary'}`}
+                            style={{ width: '100%', padding: '15px', fontSize: '18px', fontWeight: 'bold' }}
+                        >
+                            {isListening ? '🎙️ Listening... Speak Now' : '🎙️ Tap to Speak SOS (Auto-Fill)'}
+                        </button>
+                        <small style={{display: 'block', marginTop: '8px', color: '#7f8c8d'}}>
+                            Describe the emergency using your microphone. We'll automatically transcribe it and extract the category and severity.
+                        </small>
+                    </div>
+
                     <div className="form-row">
                         <div className="form-group">
                             <label>Disaster Title</label>

@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import { disastersAPI, intelligenceAPI } from '../services/api';
 import socketService from '../services/socket';
 import { fetchAllDisasters } from '../services/realTimeDisasters';
 import { createMarkerIcon, createUserLocationIcon } from './mapHelpers';
+import { getHazardPolygons, checkRouteSafety, getAvoidanceWaypoint } from '../utils/geoUtils';
 import RealTimeControls from './RealTimeControls';
 import CategoryFilter from './CategoryFilter';
 import MapLegend from './MapLegend';
@@ -12,29 +13,52 @@ import '../styles/MapDashboard.css';
 
 /**
  * RoutingDisplay - Sub-component for drawing navigation routes
- * Fetches route from OSRM and displays polyline on map
+ * Computes intersection against hazard polygons and routes around them
  */
-function RoutingDisplay({ from, to, onClear }) {
+function RoutingDisplay({ from, to, onClear, hazardPolygons = [] }) {
     const map = useMap();
     const routeLayerRef = useRef(null);
+    const [isCalculating, setIsCalculating] = useState(true);
 
     useEffect(() => {
         if (!from || !to) return;
-
-        // Fetch route from OpenStreetMap Routing Service
-        const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
-
-        fetch(url)
-            .then(res => res.json())
-            .then(data => {
+        
+        const fetchRoute = async () => {
+            setIsCalculating(true);
+            try {
+                // Initial naive route
+                let osrmCoords = `${from[1]},${from[0]};${to[1]},${to[0]}`;
+                let url = `https://router.project-osrm.org/route/v1/driving/${osrmCoords}?overview=full&geometries=geojson`;
+                
+                let res = await fetch(url);
+                let data = await res.json();
+                
                 if (data.routes && data.routes.length > 0) {
+                    let coords = data.routes[0].geometry.coordinates; // [lng, lat]
+                    
+                    // -- Component 2: Autonomous Safe-Routing check --
+                    const safety = checkRouteSafety(coords, hazardPolygons);
+                    
+                    if (!safety.isSafe) {
+                        console.warn("Route intersects hazard! Rerouting...");
+                        const bypass = getAvoidanceWaypoint(from, to, safety.conflictingHazards[0]);
+                        // New path with bypass
+                        osrmCoords = `${from[1]},${from[0]};${bypass[1]},${bypass[0]};${to[1]},${to[0]}`;
+                        url = `https://router.project-osrm.org/route/v1/driving/${osrmCoords}?overview=full&geometries=geojson`;
+                        res = await fetch(url);
+                        data = await res.json();
+                        if (data.routes && data.routes.length > 0) {
+                            coords = data.routes[0].geometry.coordinates;
+                        }
+                    }
+
                     if (routeLayerRef.current) {
                         map.removeLayer(routeLayerRef.current);
                     }
 
-                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-                    const routeLine = L.polyline(coords, {
-                        color: '#3498db',
+                    const latLngs = coords.map(c => [c[1], c[0]]);
+                    const routeLine = L.polyline(latLngs, {
+                        color: safety.isSafe ? '#3498db' : '#f39c12', // Orange if diverted
                         weight: 5,
                         opacity: 0.8
                     });
@@ -45,20 +69,26 @@ function RoutingDisplay({ from, to, onClear }) {
                     const duration = Math.round(data.routes[0].duration / 60);
 
                     routeLine.bindPopup(
-                        `<b>Route</b><br/>Distance: ${distance} km<br/>ETA: ${duration} min`
+                        `<b>${safety.isSafe ? 'Primary Route' : 'Safe Diverted Route'}</b><br/>Distance: ${distance} km<br/>ETA: ${duration} min`
                     ).openPopup();
 
                     map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
                 }
-            })
-            .catch(err => console.error('Routing error:', err));
+            } catch (err) {
+                console.error('Routing error:', err);
+            } finally {
+                setIsCalculating(false);
+            }
+        };
+
+        fetchRoute();
 
         return () => {
             if (routeLayerRef.current) {
                 map.removeLayer(routeLayerRef.current);
             }
         };
-    }, [from, to, map]);
+    }, [from, to, map, hazardPolygons]);
 
     return null;
 }
@@ -135,8 +165,8 @@ function MapDashboard() {
         fetchStats();
         fetchRealTimeDisasters();
 
-        // Auto-refresh real-time data every 45 seconds
-        autoRefreshRef.current = setInterval(fetchRealTimeDisasters, 45000);
+        // Auto-refresh real-time data every 5 seconds
+        autoRefreshRef.current = setInterval(fetchRealTimeDisasters, 5000);
 
         // Get user location
         if (navigator.geolocation) {
@@ -188,7 +218,7 @@ function MapDashboard() {
         setRouteTo([parseFloat(lat), parseFloat(lng)]);
     };
 
-    // ===== FILTERING =====
+    // ===== FILTERING & PREDICTIVE GEOMETRY =====
 
     const combined = [...disasters, ...(showRealTime ? realTimeDisasters : [])];
     const filtered = combined.filter(d => {
@@ -197,9 +227,14 @@ function MapDashboard() {
         return statusOk && categoryOk;
     });
 
+    // Compute active dynamic polygons whenever filters or weather change
+    const hazardPolygons = useMemo(() => {
+        return getHazardPolygons(filtered, weatherData);
+    }, [filtered, weatherData]);
+
     if (loading) return <div className="loading">📍 Loading map...</div>;
 
-    const center = userLocation || [20.5937, 78.9629];
+    const center = userLocation || [20, 0];
 
     return (
         <div className="map-dashboard">
@@ -264,11 +299,19 @@ function MapDashboard() {
 
             {/* ===== MAP CONTAINER ===== */}
             <div className="map-container">
-                <MapContainer center={center} zoom={5} className="leaflet-map">
+                <MapContainer 
+                    center={center} 
+                    zoom={userLocation ? 5 : 2} 
+                    minZoom={2}
+                    maxBounds={[[-90, -200], [90, 200]]}
+                    maxBoundsViscosity={1.0}
+                    className="leaflet-map"
+                >
                     {/* Base map tiles */}
                     <TileLayer
                         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                        noWrap={true}
                     />
 
                     {/* User location marker */}
@@ -329,9 +372,34 @@ function MapDashboard() {
                         </Marker>
                     ))}
 
-                    {/* Route display */}
+                    {/* Component 1: Dynamic Hazard Polygons */}
+                    {hazardPolygons.map((poly, idx) => (
+                        <GeoJSON 
+                            key={`hazard_poly_${idx}`} 
+                            data={poly} 
+                            style={() => ({
+                                color: poly.properties.severity === 'critical' ? '#e74c3c' : '#e67e22',
+                                weight: 2,
+                                opacity: 0.8,
+                                fillColor: poly.properties.severity === 'critical' ? '#e74c3c' : '#e67e22',
+                                fillOpacity: 0.3
+                            })}
+                        >
+                            <Popup>
+                                <strong>⚠️ Hazard Spread Zone</strong>
+                                <p>Dynamic trajectory for {poly.properties.title}. Avoid this area.</p>
+                            </Popup>
+                        </GeoJSON>
+                    ))}
+
+                    {/* Route display safely bypassing geometry */}
                     {routeTo && userLocation && (
-                        <RoutingDisplay from={userLocation} to={routeTo} onClear={() => setRouteTo(null)} />
+                        <RoutingDisplay 
+                            from={userLocation} 
+                            to={routeTo} 
+                            onClear={() => setRouteTo(null)} 
+                            hazardPolygons={hazardPolygons}
+                        />
                     )}
                 </MapContainer>
             </div>

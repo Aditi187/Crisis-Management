@@ -155,6 +155,8 @@ CREATE TABLE IF NOT EXISTS donations (
     razorpay_order_id VARCHAR(255),
     razorpay_payment_id VARCHAR(255),
     razorpay_signature VARCHAR(255),
+    payment_method ENUM('razorpay', 'upi') DEFAULT 'razorpay',
+    upi_reference VARCHAR(255),
     status ENUM('created', 'paid', 'failed') DEFAULT 'created',
     disaster_report_id INT,
     message TEXT,
