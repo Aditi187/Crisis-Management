@@ -7,7 +7,6 @@ import React from 'react';
 
 export default function RealTimeControls({
     showRealTime,
-    onToggleRealTime,
     realTimeLoading,
     lastUpdateTime,
     onRefresh,
@@ -16,16 +15,8 @@ export default function RealTimeControls({
 }) {
     return (
         <div className="realtime-controls">
-            {/* Toggle for live global disasters */}
             <div className="realtime-status">
-                <label className="realtime-toggle">
-                    <input
-                        type="checkbox"
-                        checked={showRealTime}
-                        onChange={(e) => onToggleRealTime(e.target.checked)}
-                    />
-                    <span className="toggle-label">🌍 Live Global Disasters</span>
-                </label>
+                <span className="toggle-label">🌍 Live Global Disasters (Real-time only)</span>
 
                 {/* Show update info when live is enabled */}
                 {showRealTime && (

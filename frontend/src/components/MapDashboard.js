@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Circle, useMap, GeoJSON } from 'react-leaflet';
+import React, { useState, useEffect, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
+import { useOutletContext } from 'react-router-dom';
 import L from 'leaflet';
-import { disastersAPI, intelligenceAPI } from '../services/api';
-import socketService from '../services/socket';
+import { intelligenceAPI } from '../services/api';
 import { fetchAllDisasters } from '../services/realTimeDisasters';
 import { createMarkerIcon, createUserLocationIcon } from './mapHelpers';
-import { getHazardPolygons, checkRouteSafety, getAvoidanceWaypoint } from '../utils/geoUtils';
 import RealTimeControls from './RealTimeControls';
 import CategoryFilter from './CategoryFilter';
 import MapLegend from './MapLegend';
@@ -13,52 +12,29 @@ import '../styles/MapDashboard.css';
 
 /**
  * RoutingDisplay - Sub-component for drawing navigation routes
- * Computes intersection against hazard polygons and routes around them
+ * Fetches route from OSRM and displays polyline on map
  */
-function RoutingDisplay({ from, to, onClear, hazardPolygons = [] }) {
+function RoutingDisplay({ from, to, onClear }) {
     const map = useMap();
     const routeLayerRef = useRef(null);
-    const [isCalculating, setIsCalculating] = useState(true);
 
     useEffect(() => {
         if (!from || !to) return;
-        
-        const fetchRoute = async () => {
-            setIsCalculating(true);
-            try {
-                // Initial naive route
-                let osrmCoords = `${from[1]},${from[0]};${to[1]},${to[0]}`;
-                let url = `https://router.project-osrm.org/route/v1/driving/${osrmCoords}?overview=full&geometries=geojson`;
-                
-                let res = await fetch(url);
-                let data = await res.json();
-                
-                if (data.routes && data.routes.length > 0) {
-                    let coords = data.routes[0].geometry.coordinates; // [lng, lat]
-                    
-                    // -- Component 2: Autonomous Safe-Routing check --
-                    const safety = checkRouteSafety(coords, hazardPolygons);
-                    
-                    if (!safety.isSafe) {
-                        console.warn("Route intersects hazard! Rerouting...");
-                        const bypass = getAvoidanceWaypoint(from, to, safety.conflictingHazards[0]);
-                        // New path with bypass
-                        osrmCoords = `${from[1]},${from[0]};${bypass[1]},${bypass[0]};${to[1]},${to[0]}`;
-                        url = `https://router.project-osrm.org/route/v1/driving/${osrmCoords}?overview=full&geometries=geojson`;
-                        res = await fetch(url);
-                        data = await res.json();
-                        if (data.routes && data.routes.length > 0) {
-                            coords = data.routes[0].geometry.coordinates;
-                        }
-                    }
 
+        // Fetch route from OpenStreetMap Routing Service
+        const url = `https://router.project-osrm.org/route/v1/driving/${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.routes && data.routes.length > 0) {
                     if (routeLayerRef.current) {
                         map.removeLayer(routeLayerRef.current);
                     }
 
-                    const latLngs = coords.map(c => [c[1], c[0]]);
-                    const routeLine = L.polyline(latLngs, {
-                        color: safety.isSafe ? '#3498db' : '#f39c12', // Orange if diverted
+                    const coords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+                    const routeLine = L.polyline(coords, {
+                        color: '#3498db',
                         weight: 5,
                         opacity: 0.8
                     });
@@ -69,40 +45,32 @@ function RoutingDisplay({ from, to, onClear, hazardPolygons = [] }) {
                     const duration = Math.round(data.routes[0].duration / 60);
 
                     routeLine.bindPopup(
-                        `<b>${safety.isSafe ? 'Primary Route' : 'Safe Diverted Route'}</b><br/>Distance: ${distance} km<br/>ETA: ${duration} min`
+                        `<b>Route</b><br/>Distance: ${distance} km<br/>ETA: ${duration} min`
                     ).openPopup();
 
                     map.fitBounds(routeLine.getBounds(), { padding: [50, 50] });
                 }
-            } catch (err) {
-                console.error('Routing error:', err);
-            } finally {
-                setIsCalculating(false);
-            }
-        };
-
-        fetchRoute();
+            })
+            .catch(err => console.error('Routing error:', err));
 
         return () => {
             if (routeLayerRef.current) {
                 map.removeLayer(routeLayerRef.current);
             }
         };
-    }, [from, to, map, hazardPolygons]);
+    }, [from, to, map]);
 
     return null;
 }
 
 /**
  * MapDashboard - Main map component for viewing disasters globally
- * Shows both local database disasters and real-time public API data
+ * Shows only real-time global disaster feeds
  */
 function MapDashboard() {
-    // Local database disasters
-    const [disasters, setDisasters] = useState([]);
+    const { presentationMode } = useOutletContext() || {};
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState('all');
-    const [stats, setStats] = useState({ total: 0, critical: 0, responding: 0 });
 
     // User location and routing
     const [userLocation, setUserLocation] = useState(null);
@@ -110,7 +78,6 @@ function MapDashboard() {
 
     // Real-time API data
     const [realTimeDisasters, setRealTimeDisasters] = useState([]);
-    const [showRealTime, setShowRealTime] = useState(true);
     const [realTimeLoading, setRealTimeLoading] = useState(false);
     const [lastUpdateTime, setLastUpdateTime] = useState(null);
     const [apiErrors, setApiErrors] = useState({ usgs: false, eonet: false });
@@ -118,6 +85,7 @@ function MapDashboard() {
     // Other data
     const [weatherData, setWeatherData] = useState(null);
     const [showProximityRadius, setShowProximityRadius] = useState(true);
+    const [briefData, setBriefData] = useState(null);
     const autoRefreshRef = useRef(null);
 
     // ===== DATA FETCHING =====
@@ -134,39 +102,18 @@ function MapDashboard() {
             setApiErrors({ usgs: true, eonet: true });
         } finally {
             setRealTimeLoading(false);
-        }
-    };
-
-    const fetchDisasters = async () => {
-        try {
-            const res = await disastersAPI.getAll();
-            setDisasters(res.data);
-        } catch (err) {
-            console.error('Error fetching disasters:', err);
-        } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchStats = async () => {
-        try {
-            const res = await disastersAPI.getStats();
-            setStats(res.data);
-        } catch (err) {
-            console.error('Error fetching stats:', err);
         }
     };
 
     // ===== INITIALIZATION & CLEANUP =====
 
     useEffect(() => {
-        // Fetch initial data
-        fetchDisasters();
-        fetchStats();
+        // Fetch initial real-time data
         fetchRealTimeDisasters();
 
-        // Auto-refresh real-time data every 5 seconds
-        autoRefreshRef.current = setInterval(fetchRealTimeDisasters, 5000);
+        // Faster refresh in presentation mode for live demo visibility
+        autoRefreshRef.current = setInterval(fetchRealTimeDisasters, presentationMode ? 15000 : 45000);
 
         // Get user location
         if (navigator.geolocation) {
@@ -186,27 +133,10 @@ function MapDashboard() {
             );
         }
 
-        // Listen for real-time disaster updates via Socket.io
-        socketService.onDisasterCreated((d) => {
-            setDisasters(prev => [d, ...prev]);
-            fetchStats();
-        });
-
-        socketService.onDisasterUpdated((d) => {
-            setDisasters(prev => prev.map(item => item.id === d.id ? d : item));
-            fetchStats();
-        });
-
-        socketService.onDisasterDeleted(({ id }) => {
-            setDisasters(prev => prev.filter(item => item.id !== id));
-            fetchStats();
-        });
-
         return () => {
             if (autoRefreshRef.current) clearInterval(autoRefreshRef.current);
-            socketService.offDisasterEvents();
         };
-    }, []);
+    }, [presentationMode]);
 
     // ===== EVENT HANDLERS =====
 
@@ -218,23 +148,104 @@ function MapDashboard() {
         setRouteTo([parseFloat(lat), parseFloat(lng)]);
     };
 
-    // ===== FILTERING & PREDICTIVE GEOMETRY =====
+    const generateIncidentBrief = (disaster) => {
+        const category = (disaster.category || 'other').toLowerCase();
+        const severity = (disaster.severity || 'medium').toUpperCase();
+        const location = disaster.location_name || 'Unknown location';
 
-    const combined = [...disasters, ...(showRealTime ? realTimeDisasters : [])];
+        const summary = `${disaster.title} is an active ${category} incident near ${location} with ${severity} severity.`;
+
+        const actionMap = {
+            earthquake: [
+                'Secure damaged structures and prevent re-entry until inspection.',
+                'Deploy search and rescue teams with medical triage support.'
+            ],
+            flood: [
+                'Move residents from low-lying zones to shelters immediately.',
+                'Deploy boat support, drainage pumps, and safe drinking water units.'
+            ],
+            fire: [
+                'Expand firebreak perimeter and isolate spread corridors.',
+                'Prioritize burn treatment and smoke protection support.'
+            ],
+            storm: [
+                'Suspend high-risk outdoor movement and secure key infrastructure.',
+                'Keep backup power and communication units on standby.'
+            ],
+            tsunami: [
+                'Issue immediate coastal evacuation and keep shoreline restricted.',
+                'Route all movement to elevated shelters and safe corridors.'
+            ]
+        };
+
+        return {
+            summary,
+            actions: [
+                'Broadcast public advisory with helpline and safe routes.',
+                ...(actionMap[category] || [
+                    'Deploy nearest response unit and validate on-ground conditions.',
+                    'Track severity updates every 15 minutes.'
+                ])
+            ].slice(0, 4),
+            volunteerPriorities: [
+                'Medical and first-aid responders',
+                'Evacuation logistics and transport',
+                'Relief distribution and shelter support'
+            ]
+        };
+    };
+
+    const handleShareIncident = async (disaster) => {
+        const text = [
+            `ALERT: ${disaster.title}`,
+            `Category: ${(disaster.category || 'other').toUpperCase()}`,
+            `Severity: ${(disaster.severity || 'medium').toUpperCase()}`,
+            `Location: ${disaster.location_name || 'Unknown'}`,
+            'Shared via Disaster Management Command Map'
+        ].join('\n');
+
+        try {
+            await navigator.clipboard.writeText(text);
+            alert('Incident text copied for WhatsApp/Telegram.');
+        } catch (error) {
+            alert('Clipboard access failed.');
+        }
+    };
+
+    // ===== FILTERING =====
+
+    const dedupeDisasters = (items) => {
+        const seen = new Set();
+        return items.filter((item) => {
+            const lat = Number(item.latitude);
+            const lng = Number(item.longitude);
+            const roundedLat = Number.isFinite(lat) ? lat.toFixed(3) : 'na';
+            const roundedLng = Number.isFinite(lng) ? lng.toFixed(3) : 'na';
+            const title = (item.title || '').toLowerCase().trim();
+            const location = (item.location_name || '').toLowerCase().trim();
+            const key = `${roundedLat}|${roundedLng}|${title}|${location}`;
+
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    };
+
+    const combined = dedupeDisasters(realTimeDisasters);
     const filtered = combined.filter(d => {
-        const statusOk = d.status !== 'resolved';
         const categoryOk = selectedCategory === 'all' || d.category === selectedCategory;
-        return statusOk && categoryOk;
+        return categoryOk;
     });
 
-    // Compute active dynamic polygons whenever filters or weather change
-    const hazardPolygons = useMemo(() => {
-        return getHazardPolygons(filtered, weatherData);
-    }, [filtered, weatherData]);
+    const stats = {
+        total: combined.length,
+        critical: combined.filter(d => d.severity === 'critical').length,
+        responding: combined.filter(d => d.status === 'active' || d.status === 'responding').length
+    };
 
     if (loading) return <div className="loading">📍 Loading map...</div>;
 
-    const center = userLocation || [20, 0];
+    const center = userLocation || [20, 0]; // Keep global view
 
     return (
         <div className="map-dashboard">
@@ -249,18 +260,19 @@ function MapDashboard() {
             </div>
 
             {/* ===== REAL-TIME CONTROLS ===== */}
-            <RealTimeControls
-                showRealTime={showRealTime}
-                onToggleRealTime={setShowRealTime}
-                realTimeLoading={realTimeLoading}
-                lastUpdateTime={lastUpdateTime}
-                onRefresh={fetchRealTimeDisasters}
-                realTimeDisastersCount={realTimeDisasters.length}
-                apiErrors={apiErrors}
-            />
+            {!presentationMode && (
+                <RealTimeControls
+                    showRealTime={true}
+                    realTimeLoading={realTimeLoading}
+                    lastUpdateTime={lastUpdateTime}
+                    onRefresh={fetchRealTimeDisasters}
+                    realTimeDisastersCount={realTimeDisasters.length}
+                    apiErrors={apiErrors}
+                />
+            )}
 
             {/* ===== WEATHER BAR ===== */}
-            {weatherData && (
+            {weatherData && !presentationMode && (
                 <div className="map-weather-bar">
                     <span>🌡️ {Math.round(weatherData.main?.temp || 0)}°C</span>
                     <span>💧 {weatherData.main?.humidity || 0}%</span>
@@ -278,11 +290,13 @@ function MapDashboard() {
             )}
 
             {/* ===== CATEGORY FILTER ===== */}
-            <CategoryFilter
-                selectedCategory={selectedCategory}
-                onCategoryChange={setSelectedCategory}
-                showRealTime={showRealTime}
-            />
+            {!presentationMode && (
+                <CategoryFilter
+                    selectedCategory={selectedCategory}
+                    onCategoryChange={setSelectedCategory}
+                    showRealTime={true}
+                />
+            )}
 
             {/* ===== ROUTE ACTIVE BANNER ===== */}
             {routeTo && (
@@ -367,45 +381,56 @@ function MapDashboard() {
                                     >
                                         🧭 Navigate Here
                                     </button>
+                                    <div className="popup-actions-row">
+                                        <button
+                                            className="popup-mini-btn"
+                                            onClick={() => setBriefData({ disaster, ...generateIncidentBrief(disaster) })}
+                                        >
+                                            🤖 AI Brief
+                                        </button>
+                                        <button
+                                            className="popup-mini-btn share"
+                                            onClick={() => handleShareIncident(disaster)}
+                                        >
+                                            📤 Share
+                                        </button>
+                                    </div>
                                 </div>
                             </Popup>
                         </Marker>
                     ))}
 
-                    {/* Component 1: Dynamic Hazard Polygons */}
-                    {hazardPolygons.map((poly, idx) => (
-                        <GeoJSON 
-                            key={`hazard_poly_${idx}`} 
-                            data={poly} 
-                            style={() => ({
-                                color: poly.properties.severity === 'critical' ? '#e74c3c' : '#e67e22',
-                                weight: 2,
-                                opacity: 0.8,
-                                fillColor: poly.properties.severity === 'critical' ? '#e74c3c' : '#e67e22',
-                                fillOpacity: 0.3
-                            })}
-                        >
-                            <Popup>
-                                <strong>⚠️ Hazard Spread Zone</strong>
-                                <p>Dynamic trajectory for {poly.properties.title}. Avoid this area.</p>
-                            </Popup>
-                        </GeoJSON>
-                    ))}
-
-                    {/* Route display safely bypassing geometry */}
+                    {/* Route display */}
                     {routeTo && userLocation && (
-                        <RoutingDisplay 
-                            from={userLocation} 
-                            to={routeTo} 
-                            onClear={() => setRouteTo(null)} 
-                            hazardPolygons={hazardPolygons}
-                        />
+                        <RoutingDisplay from={userLocation} to={routeTo} onClear={() => setRouteTo(null)} />
                     )}
                 </MapContainer>
             </div>
 
             {/* ===== LEGEND ===== */}
-            <MapLegend showRealTime={showRealTime} />
+            {!presentationMode && <MapLegend showRealTime={true} />}
+
+            {briefData && (
+                <div className="brief-modal-overlay" onClick={() => setBriefData(null)}>
+                    <div className="brief-modal" onClick={(e) => e.stopPropagation()}>
+                        <button className="brief-close-btn" onClick={() => setBriefData(null)}>✕</button>
+                        <h3>🤖 AI Incident Brief</h3>
+                        <p className="brief-summary">{briefData.summary}</p>
+                        <h4>Immediate Actions</h4>
+                        <ul className="brief-list">
+                            {briefData.actions.map((action, idx) => (
+                                <li key={idx}>{action}</li>
+                            ))}
+                        </ul>
+                        <h4>Volunteer Priorities</h4>
+                        <ul className="brief-list">
+                            {briefData.volunteerPriorities.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

@@ -338,3 +338,6 @@
         gap: 10px;
     }
 }
+
+.brief-modal-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 10000; } .brief-modal { background: #fff; border-radius: 12px; padding: 25px; width: 90%; max-width: 500px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); position: relative; } .brief-close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: black; } .brief-summary { margin-bottom: 20px; font-weight: 500; line-height: 1.5; color: #333; } .brief-list { margin-bottom: 20px; padding-left: 20px; list-style-type: disc; color: #555; } .popup-nav-btn { width: 100%; margin-top: 5px; padding: 5px; background: #cdedfc; border: 1px solid #3498db; border-radius: 4px; cursor: pointer; font-weight: bold; } .popup-actions-row { display: flex; gap: 10px; margin-top: 10px; } .popup-mini-btn { flex: 1; padding: 5px; cursor: pointer; border-radius: 4px; border: none; background: #e0f2fe; font-weight: bold; } .popup-mini-btn.share { background: #dcfce7; }
+

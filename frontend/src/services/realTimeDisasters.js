@@ -5,14 +5,14 @@
  * - NASA EONET API (Earth Observatory Natural Event Tracking)
  */
 
-// USGS Earthquake API configuration
-const USGS_API = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson';
+// USGS Earthquake API configuration (swapped to all_day for guaranteed visual markers)
+const USGS_API = 'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson';
 
-// NASA EONET API configuration
-const EONET_API = 'https://eonet.gsfc.nasa.gov/api/v3/events';
+// NASA EONET API configuration (limited to 30 days to prevent 6000+ marker crash)
+const EONET_API = 'https://eonet.gsfc.nasa.gov/api/v3/events?days=30';
 
-// OCHA ReliefWeb Global Disasters API (UN)
-const RELIEFWEB_API = 'https://api.reliefweb.int/v1/disasters?appname=crisis_management&profile=full&preset=latest&limit=15&query[value]=status:current';
+// OCHA ReliefWeb Global Disasters API (UN) -> Switched to V2 due to V1 deprecation
+const RELIEFWEB_API = 'https://api.reliefweb.int/v2/disasters?appname=crisis_management&profile=full&preset=latest&limit=25&query[value]=status:current';
 
 /**
  * Map between NASA EONET category IDs and our disaster types

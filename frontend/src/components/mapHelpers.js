@@ -93,5 +93,5 @@ export const combinedisasters = (localDisasters, realTimeDisasters, showRealTime
 export const calculateRouteInfo = (distance, duration) => {
     const distanceKm = (distance / 1000).toFixed(1);
     const durationMinutes = Math.round(duration / 60);
-    return { distanceKm, durationMinutes };
+    return {  distanceKm, durationMinutes };
 };
